@@ -77,7 +77,7 @@ userInput.addEventListener('keypress', (e) => {
 });
 
 function initialize() {
-    addBotMessage("Nizzy! I'm your AI health assistant. How may I help you today?");
+    addBotMessage("Nizzy! I'm your AI-Powered health assistant. How may I help you today?");
     showInitialOptions();
 }
 
