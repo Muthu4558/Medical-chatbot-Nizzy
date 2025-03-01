@@ -50,7 +50,7 @@ body {
     position: fixed;
     bottom: 90px;
     right: 20px;
-    width: 350px;
+    width: 400px;
     height: 550px;
     background: white;
     border-radius: 20px;
@@ -274,4 +274,11 @@ body {
 
 .option-btn i {
     font-size: 16px;
+}
+
+@media screen and (max-width: 480px) {
+    #chat-container {
+        width: 350px;
+        height: 500px;    
+    } 
 }
