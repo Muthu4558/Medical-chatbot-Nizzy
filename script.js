@@ -1,4 +1,3 @@
-// Gemini API configuration
 const API_KEY = 'AIzaSyC2wJRzz4eWYJllO_IEBLpfe-Xoq6f0jzM';
 
 // DOM Elements
@@ -57,11 +56,11 @@ function addSpeakerButton(messageDiv) {
     messageDiv.appendChild(speakerBtn);
 }
 
-function suggestTeleconsultation(userInput) {
+function suggestTeleconsultation() {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message bot-message';
     const messageText = document.createElement('p');
-    messageText.textContent = `I feel sorry for this. You should consider scheduling a teleconsultation for proper medical advice.`;
+    messageText.textContent = "I feel sorry for this. You should consider scheduling a teleconsultation for proper medical advice.";
     messageDiv.appendChild(messageText);
     const buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = 'margin-top: 10px; display: flex; justify-content: center;';
@@ -76,6 +75,49 @@ function suggestTeleconsultation(userInput) {
     chatHistory.push({ 
         role: 'assistant', 
         content: "I feel sorry for this. You should consider scheduling a teleconsultation for proper medical advice." 
+    });
+}
+
+function addEmergencyMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message bot-message';
+
+    // First, suggest calling emergency services
+    const emergencyText = document.createElement('p');
+    emergencyText.textContent = "If this is an emergency, please call 108 immediately.";
+    messageDiv.appendChild(emergencyText);
+
+    // Create button container
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = 'margin-top: 10px; display: flex; justify-content: center; gap: 10px;';
+
+    // Create "Call 108" button
+    const callButton = document.createElement('button');
+    callButton.textContent = 'Call 108';
+    callButton.style.cssText = 'background-color: red; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;';
+    callButton.addEventListener('click', () => {
+        window.location.href = 'tel:108'; // Opens phone dialer with 108
+    });
+
+    // Create "Book Teleconsultation" button
+    const bookButton = document.createElement('button');
+    bookButton.textContent = 'Book Teleconsultation';
+    bookButton.style.cssText = 'background-color: #1b8188; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;';
+    bookButton.addEventListener('click', handleTeleconsultation);
+
+    // Append buttons to container
+    buttonContainer.appendChild(callButton);
+    buttonContainer.appendChild(bookButton);
+    
+    // Append elements to messageDiv
+    messageDiv.appendChild(buttonContainer);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    chatHistory.push({ 
+        role: 'assistant', 
+        content: "If this is an emergency, please call 108 immediately. You may also book a teleconsultation below." 
     });
 }
 
@@ -294,7 +336,6 @@ function handleTimeSlotSelection(date, slot) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-
 function handleHealthConcerns() {
     isHealthMode = true;
     healthInteractionCount++; // Increment health interaction count
@@ -330,7 +371,18 @@ function hideTypingIndicator() {
 async function handleUserMessage() {
     const message = userInput.value.trim();
     if (!message) return;
-    // Check for booking related commands first
+    
+    // Emergency check: if user message contains emergency keywords, handle it immediately.
+    const lowerMsg = message.toLowerCase();
+    if(lowerMsg.includes('help me') || lowerMsg.includes('trouble') || lowerMsg.includes('emergency')){
+        addUserMessage(message);
+        userInput.value = '';
+        hideTypingIndicator();
+        addEmergencyMessage();
+        return;
+    }
+    
+    // Check for booking related commands
     const bookingKeywords = ['book appointment','book me','book an appointment','book teleconsultation','book consultation','schedule appointment'];
     if (bookingKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
         addUserMessage(message);
@@ -541,6 +593,11 @@ async function handleUserMessage() {
 
 function analyzeMessageType(message) {
     const lowerMessage = message.toLowerCase();
+    
+    // Emergency check: if the message includes emergency-related keywords, return 'emergency'
+    if(lowerMessage.includes('help me') || lowerMessage.includes('trouble') || lowerMessage.includes('emergency')){
+        return 'emergency';
+    }
     
     // Check for greetings
     if (lowerMessage.match(/^(hi|hello|heyy|hey|hii|greetings |good morning|good afternoon|good evening|howdy)(\s|$)/) || 
