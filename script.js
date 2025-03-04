@@ -393,7 +393,7 @@ async function handleUserMessage() {
     addUserMessage(message);
     userInput.value = '';
     showTypingIndicator();
-    if (message.toLowerCase() === 'exit', 'close', 'quit', 'bye', 'see you') {
+    if (message.toLowerCase() === 'exit'|| message.toLowerCase() === 'close' || message.toLowerCase() === 'quit' || message.toLowerCase() === 'bye' || message.toLowerCase() === 'see you') {
         hideTypingIndicator();
         addBotMessage("Goodbye! Take care of your health.");
         setTimeout(() => {
