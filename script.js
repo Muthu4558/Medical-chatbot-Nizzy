@@ -454,7 +454,6 @@ You are a concise personal finance assistant (general information only).
 The user selected "Personal Finance".
 Respond in exactly 3 to 5 short lines with a brief intro and one sentence describing what you can help with (budgeting, saving, debt basics).
 End by asking the user what specific finance issue they'd like help with.
-Include a short disclaimer: this is general information, not professional financial advice.
 `;
     const apiResp = await callGenerativeAPI(prompt);
     hideTypingIndicator();
