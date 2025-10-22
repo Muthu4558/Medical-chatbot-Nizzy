@@ -173,7 +173,7 @@ function showInitialOptions() {
     counsellingButton.className = 'option-btn';
     counsellingButton.innerHTML = '<i class="fas fa-comments"></i> Counselling Support';
     counsellingButton.onclick = () => {
-        addUserMessage("User selected Counselling Support");
+        addUserMessage("Counselling Support Mode");
         handleCounsellingSupport();
     };
 
@@ -181,7 +181,7 @@ function showInitialOptions() {
     financeButton.className = 'option-btn';
     financeButton.innerHTML = '<i class="fas fa-wallet"></i> Personal Finance';
     financeButton.onclick = () => {
-        addUserMessage("User selected Personal Finance");
+        addUserMessage("Personal Finance Mode");
         handleFinanceSupport();
     };
 
@@ -189,7 +189,7 @@ function showInitialOptions() {
     legalButton.className = 'option-btn';
     legalButton.innerHTML = '<i class="fas fa-balance-scale"></i> Legal Advice';
     legalButton.onclick = () => {
-        addUserMessage("User selected Legal Advice");
+        addUserMessage("Legal Advice Mode");
         handleLegalSupport();
     };
 
