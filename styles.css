@@ -278,11 +278,35 @@ body {
     height: 75vh;
     right: 5vw;
   }
+
   #chat-icon {
     bottom: 16px;
     right: 16px;
   }
+
+  /* Fix chat input area layout */
+  .chat-input-container {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  #user-input {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  /* Properly size the send button */
+  #send-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
 }
+
 
 /* --- Floating Bubble --- */
 .typing-dots {
