@@ -11,30 +11,30 @@ const minimizeChat = document.getElementById('minimize-chat');
 let chatHistory = [];
 let currentSymptoms = [];
 let isHealthMode = false;
-let isCounsellingMode = false; // counselling mode flag
-let isFinanceMode = false; // personal finance mode flag
-let isLegalMode = false; // legal advice mode flag
-let healthInteractionCount = 0; // Counter for health-related interactions
-const SUGGEST_TELECONSULTATION_AFTER = 3; // Suggest teleconsultation after this many health interactions
+let isCounsellingMode = false;
+let isFinanceMode = false;
+let isLegalMode = false;
+let healthInteractionCount = 0;
+const SUGGEST_TELECONSULTATION_AFTER = 3;
 
 // Session id
 const SESSION_ID = generateSessionId();
-
 function generateSessionId() {
     return 'sess-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
 }
 
-// Speech synthesis setup
+// ===== Speech synthesis setup =====
 let speechSynthesis = window.speechSynthesis;
 let femaleVoice = null;
+let isSpeaking = false; 
+let currentUtterance = null;
 
 function initVoice() {
     speechSynthesis.onvoiceschanged = () => {
         const voices = speechSynthesis.getVoices();
-        femaleVoice = voices.find(voice =>
-            (voice.lang && voice.lang.includes('en-') && voice.name && voice.name.toLowerCase().includes('female'))) ||
-            voices.find(voice => voice.name && voice.name.toLowerCase().includes('female')) ||
-            voices.find(voice => voice.lang && voice.lang.includes('en-')) ||
+        femaleVoice =
+            voices.find(v => v.lang.includes('en-') && v.name.toLowerCase().includes('female')) ||
+            voices.find(v => v.lang.includes('en-')) ||
             voices[0];
     };
     speechSynthesis.getVoices();
@@ -42,14 +42,22 @@ function initVoice() {
 initVoice();
 
 function speakText(text) {
-    try {
+    if (isSpeaking) {
         speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.voice = femaleVoice;
-        utterance.lang = 'en-US';
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        speechSynthesis.speak(utterance);
+        isSpeaking = false;
+        return;
+    }
+    try {
+        currentUtterance = new SpeechSynthesisUtterance(text);
+        currentUtterance.voice = femaleVoice;
+        currentUtterance.lang = 'en-US';
+        currentUtterance.rate = 1;
+        currentUtterance.pitch = 1;
+        speechSynthesis.speak(currentUtterance);
+        isSpeaking = true;
+        currentUtterance.onend = () => {
+            isSpeaking = false;
+        };
     } catch (e) {
         console.warn('Speech synthesis failed:', e);
     }
@@ -66,7 +74,45 @@ function addSpeakerButton(messageDiv) {
     messageDiv.appendChild(speakerBtn);
 }
 
-// Suggest teleconsultation UI
+// ===================================================================
+// IMPORTANT UX CHANGE (per your request):
+// - BEFORE selecting a mode: chat input and send button are disabled.
+// - A clear notice is shown: "Please select a mode to start the chat".
+// - AFTER selecting any mode (Health/Counselling/Finance/Legal or Teleconsultation),
+//   the input and send button are enabled and you may type messages.
+// The state-management for enabling/disabling chat is handled by setChatEnabled().
+// ===================================================================
+
+function setChatEnabled(enabled) {
+    userInput.disabled = !enabled;
+    sendButton.disabled = !enabled;
+    if (!enabled) {
+        userInput.placeholder = 'Please select a mode above to start chatting...';
+        userInput.classList.add('disabled-input');
+        sendButton.classList.add('disabled-button');
+    } else {
+        userInput.placeholder = 'Type your message here...';
+        userInput.classList.remove('disabled-input');
+        sendButton.classList.remove('disabled-button');
+        userInput.focus();
+    }
+}
+
+// show a top notice to make it explicit before mode selection
+function showModeSelectionNotice() {
+    // remove existing notice if present
+    const existing = document.getElementById('mode-selection-notice');
+    if (existing) existing.remove();
+
+    const notice = document.createElement('div');
+    notice.id = 'mode-selection-notice';
+    notice.style.cssText = 'background:#fff3cd;border:1px solid #ffeeba;padding:10px;border-radius:6px;margin:8px 0;font-size:13px;color:#856404;';
+    notice.textContent = 'Please select a mode (Health, Counselling, Finance, Legal or Book Teleconsultation) before typing. Chat will be enabled after selecting a mode.';
+    chatMessages.appendChild(notice);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// ====== Suggest teleconsultation ======
 function suggestTeleconsultation() {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message bot-message';
@@ -84,144 +130,117 @@ function suggestTeleconsultation() {
     messageDiv.appendChild(buttonContainer);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    chatHistory.push({
-        role: 'assistant',
-        content: assistantText
-    });
+    chatHistory.push({ role: 'assistant', content: assistantText });
 }
 
-// Emergency UI
+// ====== Emergency message ======
 function addEmergencyMessage() {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message bot-message';
-
-    const emergencyText = "If this is an emergency, please call 108 immediately.";
     const emergencyTextEl = document.createElement('p');
-    emergencyTextEl.textContent = emergencyText;
+    emergencyTextEl.textContent = "If this is an emergency, please call 108 immediately.";
     messageDiv.appendChild(emergencyTextEl);
-
     const buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = 'margin-top: 10px; display: flex; justify-content: center; gap: 10px;';
-
     const callButton = document.createElement('button');
     callButton.textContent = 'Call 108';
-    callButton.style.cssText = 'background-color: red; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;';
-    callButton.addEventListener('click', () => {
-        window.location.href = 'tel:108';
-    });
-
+    callButton.style.cssText = 'background-color: red; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;';
+    callButton.addEventListener('click', () => window.location.href = 'tel:108');
     const bookButton = document.createElement('button');
     bookButton.textContent = 'Book Teleconsultation';
-    bookButton.style.cssText = 'background-color: #1b8188; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;';
+    bookButton.style.cssText = 'background-color: #1b8188; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;';
     bookButton.addEventListener('click', handleTeleconsultation);
-
-    buttonContainer.appendChild(callButton);
-    buttonContainer.appendChild(bookButton);
+    buttonContainer.append(callButton, bookButton);
     messageDiv.appendChild(buttonContainer);
-
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    const assistantContent = "If this is an emergency, please call 108 immediately. You may also book a teleconsultation below.";
-    chatHistory.push({
-        role: 'assistant',
-        content: assistantContent
-    });
+    chatHistory.push({ role: 'assistant', content: "Emergency message displayed." });
 }
 
-// Event Listeners
+// ===== Event Listeners =====
 chatIcon.addEventListener('click', () => {
     chatWidget.classList.remove('closed');
-    if (chatMessages.children.length === 0) {
-        initialize();
+    if (chatMessages.children.length === 0) initialize();
+});
+minimizeChat.addEventListener('click', () => chatWidget.classList.add('closed'));
+
+// Disable sending if chat not enabled: wrapper checks this first
+function safeHandleUserMessageWrapper() {
+    // block chat until a mode is selected
+    if (!isHealthMode && !isCounsellingMode && !isFinanceMode && !isLegalMode) {
+        // If teleconsultation booking UI was opened it sets modes accordingly; otherwise block
+        addBotMessage('❗ Please select a mode (Health, Counselling, Finance, Legal) or Book Teleconsultation from the options before typing.');
+        return;
     }
-});
-minimizeChat.addEventListener('click', () => {
-    chatWidget.classList.add('closed');
-});
-sendButton.addEventListener('click', handleUserMessage);
-userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleUserMessage();
-});
+    handleUserMessage();
+}
+
+sendButton.addEventListener('click', safeHandleUserMessageWrapper);
+userInput.addEventListener('keypress', e => { if (e.key === 'Enter') safeHandleUserMessageWrapper(); });
 
 function initialize() {
     addBotMessage("Nizzy! I'm your AI-Powered health assistant. How may I help you today?");
     showInitialOptions();
+    setChatEnabled(false); // IMPORTANT: block chat until a mode is selected
+    showModeSelectionNotice();
+
+    setTimeout(() => { chatMessages.style.scrollBehavior='auto'; chatMessages.scrollTop = 0; chatMessages.style.scrollBehavior='smooth'; }, 10);
 }
 
+// ===== Show options =====
 function showInitialOptions() {
     const optionsDiv = document.createElement('div');
     optionsDiv.className = 'options-container';
-
-    const teleButton = document.createElement('button');
-    teleButton.className = 'option-btn';
-    teleButton.innerHTML = '<i class="fas fa-calendar-check"></i> Book Teleconsultation';
-    teleButton.onclick = () => {
-        addUserMessage("I'd like to book a teleconsultation");
-        handleTeleconsultation();
+    const makeBtn = (icon, label, action) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<i class="${icon}"></i> ${label}`;
+        btn.onclick = () => {
+            addUserMessage(label);
+            action(); // call mode handler
+            // After a mode is chosen, enable chat input:
+            setChatEnabled(true);
+            // remove the mode-selection notice (if present)
+            const notice = document.getElementById('mode-selection-notice');
+            if (notice) notice.remove();
+        };
+        return btn;
     };
-
-    const healthButton = document.createElement('button');
-    healthButton.className = 'option-btn';
-    healthButton.innerHTML = '<i class="fas fa-heartbeat"></i> Health Concerns';
-    healthButton.onclick = () => {
-        addUserMessage("I have some health concerns");
-        handleHealthConcerns();
-    };
-
-    const counsellingButton = document.createElement('button');
-    counsellingButton.className = 'option-btn';
-    counsellingButton.innerHTML = '<i class="fas fa-comments"></i> Counselling Support';
-    counsellingButton.onclick = () => {
-        addUserMessage("Counselling Support Mode");
-        handleCounsellingSupport();
-    };
-
-    const financeButton = document.createElement('button');
-    financeButton.className = 'option-btn';
-    financeButton.innerHTML = '<i class="fas fa-wallet"></i> Personal Finance';
-    financeButton.onclick = () => {
-        addUserMessage("Personal Finance Mode");
-        handleFinanceSupport();
-    };
-
-    const legalButton = document.createElement('button');
-    legalButton.className = 'option-btn';
-    legalButton.innerHTML = '<i class="fas fa-balance-scale"></i> Legal Advice';
-    legalButton.onclick = () => {
-        addUserMessage("Legal Advice Mode");
-        handleLegalSupport();
-    };
-
-    optionsDiv.appendChild(teleButton);
-    optionsDiv.appendChild(healthButton);
-    optionsDiv.appendChild(counsellingButton);
-    optionsDiv.appendChild(financeButton);
-    optionsDiv.appendChild(legalButton);
+    optionsDiv.append(
+        makeBtn('fas fa-calendar-check', 'Book Teleconsultation', () => { handleTeleconsultation(); }),
+        makeBtn('fas fa-heartbeat', 'Health Concerns', () => { handleHealthConcerns(); }),
+        makeBtn('fas fa-comments', 'Counselling Support', () => { handleCounsellingSupport(); }),
+        makeBtn('fas fa-wallet', 'Personal Finance', () => { handleFinanceSupport(); }),
+        makeBtn('fas fa-balance-scale', 'Legal Advice', () => { handleLegalSupport(); })
+    );
     chatMessages.appendChild(optionsDiv);
 }
 
-// Booking functions (unchanged)
+// ===== Teleconsultation Booking =====
 function handleTeleconsultation() {
+    // Selecting teleconsultation counts as selecting a mode
     isHealthMode = false;
     isCounsellingMode = false;
     isFinanceMode = false;
     isLegalMode = false;
 
+    // enable chat input (user can type follow up questions)
+    setChatEnabled(true);
+
     const container = document.createElement("div");
-    container.style.cssText = `background: #ffffff; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; margin: 10px 0;`;
+    container.style.cssText = `background: #ffffff; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin: 10px 0;`;
     const message = document.createElement("p");
     message.textContent = "Select Date to Book Your Teleconsultation:";
-    message.style.cssText = `font-weight: bold; margin-bottom: 10px; font-family: Arial, sans-serif;`;
+    message.style.cssText = `font-weight: bold; margin-bottom: 10px;`;
     container.appendChild(message);
+
     const dateInput = document.createElement("input");
     dateInput.type = "date";
-    dateInput.min = new Date(new Date().setDate(new Date().getDate() + 1))
-        .toISOString()
-        .split("T")[0];
+    dateInput.min = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split("T")[0];
     dateInput.style.cssText = `margin: 5px 0; padding: 5px; border: 1px solid #ccc; margin-bottom: 10px; border-radius: 5px;`;
     dateInput.addEventListener("change", () => handleDateSelection(dateInput.value));
     container.appendChild(dateInput);
+
     chatMessages.appendChild(container);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -231,14 +250,16 @@ function handleDateSelection(selectedDate) {
     userMessage.textContent = `Selected Date: ${selectedDate}`;
     userMessage.className = 'message user-message';
     chatMessages.appendChild(userMessage);
+
     const container = document.createElement("div");
-    container.style.cssText = `background: #ffffff; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); margin: 10px 0; font-family: Arial, sans-serif;`;
+    container.style.cssText = `background: #ffffff; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin: 10px 0;`;
     const message = document.createElement("p");
     message.textContent = `Choose Your Time Slot for ${selectedDate}:`;
     message.style.cssText = `font-weight: bold; margin-bottom: 10px;`;
     container.appendChild(message);
+
     const timeSlots = ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM"];
-    timeSlots.forEach((slot) => {
+    timeSlots.forEach(slot => {
         const button = document.createElement("button");
         button.textContent = slot;
         button.style.cssText = `background: #229ea6; color: white; padding: 8px 12px; border: none; margin: 5px 0; border-radius: 5px; cursor: pointer; display: block; width: 100%; text-align: left;`;
@@ -254,29 +275,34 @@ function handleTimeSlotSelection(date, slot) {
     userMessage.textContent = `Selected Time Slot: ${slot}`;
     userMessage.className = 'message user-message';
     chatMessages.appendChild(userMessage);
+
     const detailsContainer = document.createElement("div");
-    detailsContainer.style.cssText = `margin: 10px 0; background: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);`;
+    detailsContainer.style.cssText = `margin: 10px 0; background: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1);`;
     const botMessage = document.createElement("p");
     botMessage.textContent = "Please share the following details:";
-    botMessage.style.cssText = `font-weight: bold; margin-bottom: 15px; font-family: Arial, sans-serif; font-size: 16px;`;
+    botMessage.style.cssText = `font-weight: bold; margin-bottom: 15px; font-size: 16px;`;
     detailsContainer.appendChild(botMessage);
+
     const userInputs = {};
+
     const nameInput = document.createElement("input");
     nameInput.type = "text";
-    nameInput.placeholder = "Full Name";
-    nameInput.style.cssText = `background: #f9f9f9; color: #333; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; display: block; width: 100%; box-sizing: border-box; font-size: 14px;`;
+    nameInput.placeholder = "Full Name (only alphabets)";
+    nameInput.style.cssText = inputStyle();
     userInputs["Full Name"] = nameInput;
     detailsContainer.appendChild(nameInput);
+
     const ageInput = document.createElement("input");
     ageInput.type = "number";
     ageInput.placeholder = "Age";
-    ageInput.max = "999";
-    ageInput.style.cssText = `background: #f9f9f9; color: #333; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; display: block; width: 100%; box-sizing: border-box; font-size: 14px;`;
+    ageInput.max = "120";
+    ageInput.style.cssText = inputStyle();
     userInputs["Age"] = ageInput;
     detailsContainer.appendChild(ageInput);
+
     const genderInput = document.createElement("select");
-    genderInput.style.cssText = `background: #f9f9f9; color: #333; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; display: block; width: 100%; box-sizing: border-box; font-size: 14px;`;
-    ["Select Gender", "Male", "Female", "Others"].forEach((option) => {
+    genderInput.style.cssText = inputStyle();
+    ["Select Gender", "Male", "Female", "Others"].forEach(option => {
         const genderOption = document.createElement("option");
         genderOption.value = option === "Select Gender" ? "" : option;
         genderOption.textContent = option;
@@ -284,95 +310,62 @@ function handleTimeSlotSelection(date, slot) {
     });
     userInputs["Gender"] = genderInput;
     detailsContainer.appendChild(genderInput);
+
     const mobileInput = document.createElement("input");
-    mobileInput.type = "number";
-    mobileInput.placeholder = "Mobile Number";
-    mobileInput.style.cssText = `background: #f9f9f9; color: #333; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; display: block; width: 100%; box-sizing: border-box; font-size: 14px;`;
+    mobileInput.type = "tel";
+    mobileInput.placeholder = "Mobile Number (10 digits)";
+    mobileInput.maxLength = 10;
+    mobileInput.style.cssText = inputStyle();
     userInputs["Mobile Number"] = mobileInput;
     detailsContainer.appendChild(mobileInput);
+
     const submitButton = document.createElement("button");
     submitButton.textContent = "Submit";
-    submitButton.style.cssText = `background: #229ea6; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; width: 100%; margin-top: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);`;
+    submitButton.style.cssText = `background: #229ea6; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; width: 100%; margin-top: 10px;`;
     detailsContainer.appendChild(submitButton);
     chatMessages.appendChild(detailsContainer);
 
-    function handleSubmit() {
-        let allFieldsFilled = true;
-        const collectedData = {};
-        for (const field in userInputs) {
-            const input = userInputs[field];
-            const value = input.value.trim();
-            if (field === "Full Name" && !/^[a-zA-Z\s]+$/.test(value)) {
-                input.style.border = "1px solid red";
-                allFieldsFilled = false;
-                continue;
-            }
-            if (field === "Gender" && value === "") {
-                input.style.border = "1px solid red";
-                allFieldsFilled = false;
-                continue;
-            }
-            if (!value) {
-                input.style.border = "1px solid red";
-                allFieldsFilled = false;
-            } else {
-                input.style.border = "1px solid #ddd";
-                collectedData[field] = value;
-            }
-        }
-        if (allFieldsFilled) {
-            const otpContainer = document.createElement("div");
-            otpContainer.style.cssText = `margin: 10px 0; background: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);`;
-
-            const otpMessage = document.createElement("p");
-            otpMessage.textContent = `OTP sent to ${collectedData["Mobile Number"]}. Verify your number:`;
-            otpMessage.style.cssText = `font-weight: bold; margin-bottom: 15px; font-size: 16px;`;
-            otpContainer.appendChild(otpMessage);
-
-            const otpInput = document.createElement("input");
-            otpInput.type = "text";
-            otpInput.placeholder = "Enter OTP";
-            otpInput.style.cssText = `margin: 5px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; font-size: 14px;`;
-            otpInput.addEventListener("input", (e) => {
-                otpInput.value = otpInput.value.replace(/\D/g, "");
-            });
-            otpContainer.appendChild(otpInput);
-            const verifyButton = document.createElement("button");
-            verifyButton.textContent = "Verify";
-            verifyButton.style.cssText = `background: #229ea6; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; width: 100%; margin-top: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);`;
-            verifyButton.addEventListener("click", () => {
-                const confirmationMessage = document.createElement("div");
-                confirmationMessage.innerHTML = `✅ Booking Confirmation!<br><br>
-                    📅 Date: ${date}<br>
-                    ⏰ Time: ${slot}<br>
-                    👤 Patient Name: ${collectedData["Full Name"]}<br>
-                    📞 Mobile Number: ${collectedData["Mobile Number"]}`;
-                confirmationMessage.style.cssText = `background: #fff; font-family: Arial, Helvetica, sans-serif; color: #333; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);`;
-                const closeConfirmationBtn = document.createElement("button");
-                closeConfirmationBtn.textContent = "Close";
-                closeConfirmationBtn.style.cssText = `background: red; color: white; padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;`;
-                closeConfirmationBtn.addEventListener("click", function() {
-                    location.reload();
-                });
-                confirmationMessage.appendChild(closeConfirmationBtn);
-                chatMessages.appendChild(confirmationMessage);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                otpContainer.remove();
-            });
-            otpContainer.appendChild(verifyButton);
-            chatMessages.appendChild(otpContainer);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            otpInput.addEventListener("keydown", (event) => {
-                if (event.key === "Enter") verifyButton.click();
-            });
-        } else {
-            addBotMessage("❗ Please fill in all the details correctly.");
-        }
+    function inputStyle() {
+        return `background: #f9f9f9; color: #333; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; width: 100%; box-sizing: border-box; font-size: 14px;`;
     }
+
+    function handleSubmit() {
+        let valid = true;
+        const nameVal = nameInput.value.trim();
+        const ageVal = ageInput.value.trim();
+        const genderVal = genderInput.value;
+        const mobileVal = mobileInput.value.trim();
+
+        if (!/^[a-zA-Z\s]+$/.test(nameVal)) { nameInput.style.border = "1px solid red"; valid = false; } else nameInput.style.border = "1px solid #ddd";
+        if (!/^\d+$/.test(ageVal) || parseInt(ageVal) <= 0) { ageInput.style.border = "1px solid red"; valid = false; } else ageInput.style.border = "1px solid #ddd";
+        if (genderVal === "") { genderInput.style.border = "1px solid red"; valid = false; } else genderInput.style.border = "1px solid #ddd";
+        if (!/^\d{10}$/.test(mobileVal)) { mobileInput.style.border = "1px solid red"; valid = false; } else mobileInput.style.border = "1px solid #ddd";
+
+        if (!valid) {
+            addBotMessage("❗ Please fill in all the details correctly.");
+            return;
+        }
+
+        const confirmationMessage = document.createElement("div");
+        confirmationMessage.innerHTML = `✅ Booking Confirmed!<br><br>
+        📅 Date: ${date}<br>
+        ⏰ Time: ${slot}<br>
+        👤 Name: ${nameVal}<br>
+        📞 Mobile: ${mobileVal}`;
+        confirmationMessage.style.cssText = `background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #ccc; margin-top: 10px;`;
+
+        const closeBtn = document.createElement("button");
+        closeBtn.textContent = "Close";
+        closeBtn.style.cssText = `background: red; color: white; padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;`;
+        closeBtn.addEventListener("click", () => location.reload());
+        confirmationMessage.appendChild(closeBtn);
+
+        chatMessages.appendChild(confirmationMessage);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
     submitButton.addEventListener("click", handleSubmit);
-    detailsContainer.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") handleSubmit();
-    });
+    detailsContainer.addEventListener("keydown", e => { if (e.key === "Enter") handleSubmit(); });
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -418,6 +411,42 @@ async function callGenerativeAPI(prompt) {
     }
 }
 
+function showTypingIndicator() {
+    if (document.getElementById('typing-bubble')) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message bot-message typing-bubble';
+    messageDiv.id = 'typing-bubble';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'typing-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+
+    const bubbleInner = document.createElement('div');
+    bubbleInner.className = 'typing-bubble-inner';
+
+    const dotsContainer = document.createElement('div');
+    dotsContainer.className = 'typing-dots';
+    for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'typing-dot';
+        dotsContainer.appendChild(dot);
+    }
+
+    bubbleInner.appendChild(dotsContainer);
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(bubbleInner);
+
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typing-bubble');
+    if (indicator) indicator.remove();
+}
+
+
 // Counselling Support: generate intro via API (3-5 lines)
 async function handleCounsellingSupport() {
     isCounsellingMode = true;
@@ -436,8 +465,10 @@ Do NOT give clinical diagnoses or long instructions; be brief and encouraging.
     hideTypingIndicator();
     if (apiResp) {
         addBotMessage(apiResp);
+        setChatEnabled(true);
     } else {
         addBotMessage("I'm here to listen. How can I help you today?");
+        setChatEnabled(true);
     }
 }
 
@@ -459,8 +490,10 @@ End by asking the user what specific finance issue they'd like help with.
     hideTypingIndicator();
     if (apiResp) {
         addBotMessage(apiResp);
+        setChatEnabled(true);
     } else {
         addBotMessage("You've selected Personal Finance. What would you like help with (budgeting, saving, debt, investing)?");
+        setChatEnabled(true);
     }
 }
 
@@ -481,8 +514,10 @@ Respond in exactly 3 to 5 short lines that: 1) briefly state the kinds of legal 
     hideTypingIndicator();
     if (apiResp) {
         addBotMessage(apiResp);
+        setChatEnabled(true);
     } else {
         addBotMessage("You've selected Legal Advice (general info only). Please briefly describe the legal issue.");
+        setChatEnabled(true);
     }
 }
 
@@ -871,11 +906,23 @@ Respond in exactly 3 to 5 short lines:
 `;
 }
 
+// === FINAL: formatResponse - single unified function ===
 function formatResponse(text, type) {
+    // If type expects bullet/structured output return text as-is
     if (['symptoms','lifestyle','diet','remedies','psychological','finance','legal','counselling'].includes(type)) {
-        return text;
+        // Remove empty bullet points and normalize extra newlines
+        return text
+            .replace(/•\s*(\n|$)/g, '') // remove empty bullet lines
+            .replace(/\n{2,}/g, '\n')
+            .replace(/•+/g, '•')
+            .replace(/•\s*•/g, '•')
+            .trim();
     }
-    return text.replace(/•/g, '').replace(/\n/g, '\n• ');
+    // For general/default responses, keep it short and tidy
+    return text
+        .replace(/•\s*(\n|$)/g, '') // remove empty bullet lines
+        .replace(/\n{2,}/g, '\n')
+        .trim();
 }
 
 function addUserMessage(message) {
