@@ -26,7 +26,7 @@ function generateSessionId() {
 // ===== Speech synthesis setup =====
 let speechSynthesis = window.speechSynthesis;
 let femaleVoice = null;
-let isSpeaking = false; 
+let isSpeaking = false;
 let currentUtterance = null;
 
 function initVoice() {
@@ -184,7 +184,7 @@ function initialize() {
     setChatEnabled(false); // IMPORTANT: block chat until a mode is selected
     showModeSelectionNotice();
 
-    setTimeout(() => { chatMessages.style.scrollBehavior='auto'; chatMessages.scrollTop = 0; chatMessages.style.scrollBehavior='smooth'; }, 10);
+    setTimeout(() => { chatMessages.style.scrollBehavior = 'auto'; chatMessages.scrollTop = 0; chatMessages.style.scrollBehavior = 'smooth'; }, 10);
 }
 
 // ===== Show options =====
@@ -262,7 +262,7 @@ function handleDateSelection(selectedDate) {
     timeSlots.forEach(slot => {
         const button = document.createElement("button");
         button.textContent = slot;
-        button.style.cssText = `background: #229ea6; color: white; padding: 8px 12px; border: none; margin: 5px 0; border-radius: 5px; cursor: pointer; display: block; width: 100%; text-align: left;`;
+        button.style.cssText = `background: #1da69a; color: white; padding: 8px 12px; border: none; margin: 5px 0; border-radius: 5px; cursor: pointer; display: block; width: 100%; text-align: left;`;
         button.addEventListener("click", () => handleTimeSlotSelection(selectedDate, slot));
         container.appendChild(button);
     });
@@ -321,7 +321,7 @@ function handleTimeSlotSelection(date, slot) {
 
     const submitButton = document.createElement("button");
     submitButton.textContent = "Submit";
-    submitButton.style.cssText = `background: #229ea6; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; width: 100%; margin-top: 10px;`;
+    submitButton.style.cssText = `background: #1da69a; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; width: 100%; margin-top: 10px;`;
     detailsContainer.appendChild(submitButton);
     chatMessages.appendChild(detailsContainer);
 
@@ -347,11 +347,15 @@ function handleTimeSlotSelection(date, slot) {
         }
 
         const confirmationMessage = document.createElement("div");
-        confirmationMessage.innerHTML = `✅ Booking Confirmed!<br><br>
-        📅 Date: ${date}<br>
-        ⏰ Time: ${slot}<br>
-        👤 Name: ${nameVal}<br>
-        📞 Mobile: ${mobileVal}`;
+        confirmationMessage.innerHTML = `
+  <div class="booking-confirmed">
+    <div class="status"><i class="fa-solid fa-circle-check"></i> Booking Confirmed!</div>
+    <div><i class="fa-solid fa-calendar-days"></i> <strong>Date:</strong> ${date}</div>
+    <div><i class="fa-solid fa-clock"></i> <strong>Time:</strong> ${slot}</div>
+    <div><i class="fa-solid fa-user"></i> <strong>Name:</strong> ${nameVal}</div>
+    <div><i class="fa-solid fa-phone"></i> <strong>Mobile:</strong> ${mobileVal}</div>
+  </div>
+`;
         confirmationMessage.style.cssText = `background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #ccc; margin-top: 10px;`;
 
         const closeBtn = document.createElement("button");
@@ -546,7 +550,7 @@ async function handleUserMessage() {
 
     const lowerMsg = message.toLowerCase();
     // emergency
-    if(lowerMsg.includes('help me') || lowerMsg.includes('trouble') || lowerMsg.includes('emergency')){
+    if (lowerMsg.includes('help me') || lowerMsg.includes('trouble') || lowerMsg.includes('emergency')) {
         addUserMessage(message);
         userInput.value = '';
         hideTypingIndicator();
@@ -555,7 +559,7 @@ async function handleUserMessage() {
     }
 
     // booking keywords
-    const bookingKeywords = ['book appointment','book me','book an appointment','book teleconsultation','book consultation','schedule appointment'];
+    const bookingKeywords = ['book appointment', 'book me', 'book an appointment', 'book teleconsultation', 'book consultation', 'schedule appointment'];
     if (bookingKeywords.some(keyword => message.toLowerCase().includes(keyword))) {
         addUserMessage(message);
         userInput.value = '';
@@ -676,7 +680,7 @@ async function handleUserMessage() {
             prompt = createLegalPrompt(message);
         } else {
             // health or other mapping
-            switch(messageType) {
+            switch (messageType) {
                 case 'symptoms':
                     prompt = createSymptomsPrompt(message);
                     currentSymptoms = [];
@@ -737,7 +741,7 @@ async function handleUserMessage() {
 function analyzeMessageType(message) {
     const lowerMessage = message.toLowerCase();
 
-    if(lowerMessage.includes('help me') || lowerMessage.includes('trouble') || lowerMessage.includes('emergency')){
+    if (lowerMessage.includes('help me') || lowerMessage.includes('trouble') || lowerMessage.includes('emergency')) {
         return 'emergency';
     }
 
@@ -909,7 +913,7 @@ Respond in exactly 3 to 5 short lines:
 // === FINAL: formatResponse - single unified function ===
 function formatResponse(text, type) {
     // If type expects bullet/structured output return text as-is
-    if (['symptoms','lifestyle','diet','remedies','psychological','finance','legal','counselling'].includes(type)) {
+    if (['symptoms', 'lifestyle', 'diet', 'remedies', 'psychological', 'finance', 'legal', 'counselling'].includes(type)) {
         // Remove empty bullet points and normalize extra newlines
         return text
             .replace(/•\s*(\n|$)/g, '') // remove empty bullet lines
@@ -993,27 +997,27 @@ let symptomConversationState = {
 function isAboutSymptomDuration(message) {
     const lowerMessage = message.toLowerCase();
     return lowerMessage.includes('day') ||
-           lowerMessage.includes('week') ||
-           lowerMessage.includes('month') ||
-           lowerMessage.includes('hour') ||
-           lowerMessage.includes('since') ||
-           lowerMessage.includes('yesterday') ||
-           lowerMessage.includes('today') ||
-           lowerMessage.includes('morning') ||
-           lowerMessage.includes('night') ||
-           /\d+/.test(lowerMessage);
+        lowerMessage.includes('week') ||
+        lowerMessage.includes('month') ||
+        lowerMessage.includes('hour') ||
+        lowerMessage.includes('since') ||
+        lowerMessage.includes('yesterday') ||
+        lowerMessage.includes('today') ||
+        lowerMessage.includes('morning') ||
+        lowerMessage.includes('night') ||
+        /\d+/.test(lowerMessage);
 }
 function mentionsAdditionalSymptoms(message) {
     const lowerMessage = message.toLowerCase();
     return lowerMessage.includes('also') ||
-           lowerMessage.includes('addition') ||
-           lowerMessage.includes('another') ||
-           lowerMessage.includes('more') ||
-           lowerMessage.includes('symptom') ||
-           lowerMessage.includes('as well') ||
-           lowerMessage.includes('too') ||
-           lowerMessage.includes('yes') ||
-           lowerMessage.includes('and');
+        lowerMessage.includes('addition') ||
+        lowerMessage.includes('another') ||
+        lowerMessage.includes('more') ||
+        lowerMessage.includes('symptom') ||
+        lowerMessage.includes('as well') ||
+        lowerMessage.includes('too') ||
+        lowerMessage.includes('yes') ||
+        lowerMessage.includes('and');
 }
 
 // Comprehensive analysis prompt builder

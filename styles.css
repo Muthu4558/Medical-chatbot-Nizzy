@@ -315,3 +315,31 @@ body {
     opacity: 1;
   }
 }
+
+.booking-confirmed {
+  font-family: 'Inter', sans-serif;
+  background: #f8f9fa;
+  border-left: 4px solid #1da69a;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  line-height: 1.6;
+}
+
+.booking-confirmed i {
+  color: #1da69a;
+  margin-right: 8px;
+}
+
+.booking-confirmed .status {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: #1da69a;
+  display: flex;
+  align-items: center;
+}
+
+.booking-confirmed strong {
+  color: #333;
+}
