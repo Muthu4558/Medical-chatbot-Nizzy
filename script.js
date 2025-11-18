@@ -777,6 +777,14 @@ function analyzeMessageType(message) {
         return 'symptoms';
     }
 
+    if (lowerMessage.includes('symptom') || lowerMessage.includes('feel') || lowerMessage.includes('have') || lowerMessage.includes('irritation') || lowerMessage.includes('hurt') || lowerMessage.includes('ache') || lowerMessage.includes('sick') || lowerMessage.includes('fever') || lowerMessage.includes('cough') || lowerMessage.includes('headache') || lowerMessage.includes('nausea') || lowerMessage.includes('dizzy') || lowerMessage.includes('tired') || lowerMessage.includes('fatigue')) {
+        return 'symptoms';
+    }
+
+    if (lowerMessage.includes('symptom') || lowerMessage.includes('feel') || lowerMessage.includes('have') || lowerMessage.includes('cold') || lowerMessage.includes('hurt') || lowerMessage.includes('ache') || lowerMessage.includes('sick') || lowerMessage.includes('fever') || lowerMessage.includes('cough') || lowerMessage.includes('headache') || lowerMessage.includes('nausea') || lowerMessage.includes('dizzy') || lowerMessage.includes('tired') || lowerMessage.includes('fatigue')) {
+        return 'symptoms';
+    }
+
     // psychological
     if (lowerMessage.includes('anxiety') || lowerMessage.includes('depression') || lowerMessage.includes('anxious') || lowerMessage.includes('panic') || lowerMessage.includes('mental health') || lowerMessage.includes('psychological')) {
         return 'psychological';
